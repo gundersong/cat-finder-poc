@@ -10,7 +10,13 @@ const _getAllCatBreeds = async (params: CatApiParams): Promise<CatBreed[]> => {
 
   console.log('retrieving all cat breeds from cat-api')
 
-  const allBreeds = await fetch(urlWithParams).then((res) => res.json())
+  const allBreeds = await fetch(urlWithParams).then((res) => {
+    if (!res.ok) {
+      console.error('error calling cat api')
+      throw new Error('error calling cat api')
+    }
+    return res.json()
+  })
 
   return allBreeds as CatBreed[]
 }

@@ -1,0 +1,47 @@
+service: cat-finder-service
+
+plugins:
+  - serverless-esbuild
+
+package:
+  individually: true
+  patterns:
+    - src/**
+
+custom:
+  pathPrefix: cats
+  esbuild:
+    bundle: true
+    minify: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ${opt:region, 'ap-southeast-2'}
+  stage: ${opt:stage, env:STAGE, 'dev'}
+  memorySize: 256
+  lambdaHashingVersion: 20201221
+  apiGateway:
+    apiKeys:
+      - CatService
+  environment:
+    STAGE: ${self:provider.stage}
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: 'secretsmanager:GetSecretValue'
+          Resource: 
+            - { 'Fn::Join': [':', ['arn:aws:secretsmanager:${self:provider.region}', { Ref: 'AWS::AccountId' }, 'secret:${self:provider.stage}/cat-api-*']] }
+
+functions:
+  top-cats:
+    name: top-cats-${self:provider.stage}
+    handler: src/lambda.handler
+    events:
+      - http:
+          method: get
+          path: ${self:custom.pathPrefix}/top
+          private: true
+
